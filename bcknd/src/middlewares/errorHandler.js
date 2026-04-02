@@ -1,6 +1,5 @@
 const AppError = require("../utils/AppError");
 
-// ── Mongoose-specific error translators──
 const handleCastErrorDB = (err) =>
   new AppError(`Invalid ${err.path}: ${err.value}.`, 400);
 
@@ -17,14 +16,12 @@ const handleValidationErrorDB = (err) => {
   return new AppError(`Validation failed: ${messages.join(" | ")}`, 422);
 };
 
-// ── JWT error translators 
 const handleJWTError = () =>
   new AppError("Invalid token. Please log in again.", 401);
 
 const handleJWTExpiredError = () =>
   new AppError("Your session has expired. Please log in again.", 401);
 
-// ── Response senders
 const sendErrorDev = (err, res) => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -35,14 +32,12 @@ const sendErrorDev = (err, res) => {
 };
 
 const sendErrorProd = (err, res) => {
-  // Operational (trusted) errors: send details to the client
   if (err.isOperational) {
     return res.status(err.statusCode).json({
       status: err.status,
       message: err.message,
     });
   }
-  // Programming or unknown errors: don't leak internals
   console.error("UNEXPECTED ERROR:", err);
   res.status(500).json({
     status: "error",
@@ -50,7 +45,6 @@ const sendErrorProd = (err, res) => {
   });
 };
 
-// ── Main global error handler ─────────────────────────────────────────────
 const errorHandler = (err, req, res, _next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
@@ -59,13 +53,11 @@ const errorHandler = (err, req, res, _next) => {
     sendErrorDev(err, res);
   } else {
     let error = Object.assign(Object.create(Object.getPrototypeOf(err)), err);
-
     if (err.name === "CastError") error = handleCastErrorDB(error);
     if (err.code === 11000) error = handleDuplicateFieldsDB(error);
     if (err.name === "ValidationError") error = handleValidationErrorDB(error);
     if (err.name === "JsonWebTokenError") error = handleJWTError();
     if (err.name === "TokenExpiredError") error = handleJWTExpiredError();
-
     sendErrorProd(error, res);
   }
 };

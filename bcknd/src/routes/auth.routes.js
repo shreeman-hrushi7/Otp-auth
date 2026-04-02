@@ -1,3 +1,4 @@
+
 const express = require("express");
 const router = express.Router();
 // importing the controllers by destructuring the exports from auth.controller.js
@@ -29,7 +30,7 @@ const handleValidationErrors = require("../middlewares/validate");
 const { otpLimiter, authLimiter } = require("../middlewares/rateLimiter");
 
 
-// ── Registration flow ──────────────────────────────────────────────────────
+// ── Registration flow ──
 // Step 1 — submit email, receive OTP
 router.post(
   "/register/init",
