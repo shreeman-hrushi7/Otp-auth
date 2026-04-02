@@ -9,7 +9,7 @@ try {
     enableOfflineQueue: false,
     maxRetriesPerRequest: 1,
     retryStrategy(times) {
-      // Stop retrying after 3 attempts — Redis is optional
+      // Stop retrying after 3 attempts 
       if (times >= 3) return null;
       return Math.min(times * 500, 2000);
     },
@@ -22,14 +22,13 @@ try {
 
   redis.on("error", () => {
     isRedisReady = false;
-    // Silently swallow — we log once below, not on every retry
+    //we log once below, not on every retry
   });
 
   redis.on("close", () => {
     isRedisReady = false;
   });
-
-  // Connect in background — never block app startup
+p
   redis.connect().catch(() => {
     console.warn("Redis not available — rate limiting will be skipped");
   });
@@ -37,10 +36,6 @@ try {
   console.warn("Redis setup failed — rate limiting will be skipped");
 }
 
-/**
- * Returns true only when Redis is connected and usable.
- * Use this before every Redis operation to avoid 500 errors.
- */
 const isReady = () => isRedisReady && redis !== null;
 
 module.exports = { redis, isReady };
