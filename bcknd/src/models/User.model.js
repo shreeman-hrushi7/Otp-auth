@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-// details of the user
+
 const userSchema = new mongoose.Schema(
   {
     email: {
@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       minlength: 8,
-      select: false, // excluded from queries by default
+      select: false,
     },
     name: {
       type: String,
@@ -28,30 +28,41 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // Tracks which step of registration the user is on
-    // 'pending'    – email submitted, awaiting OTP
-    // 'credentials_set' – OTP verified, password set
-    // 'onboarded'  – name + org filled in
-
     registrationStep: {
       type: String,
       enum: ["pending", "credentials_set", "onboarded"],
       default: "pending",
     },
+
+    // ── Google OAuth fields ──────────────────────────────────────────────
+    googleId: {
+      type: String,
+      sparse: true, // allows multiple null values (only email/OTP users have null)
+      unique: true,
+    },
+    avatar: {
+      type: String, // Google profile picture URL
+    },
+    // Tracks how this account was originally created
+    // 'local'  — registered via email OTP flow
+    // 'google' — registered via Google OAuth
+    authMethod: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
   },
   { timestamps: true },
 );
 
-// Hash password before saving if it has been modified
-userSchema.pre("save", async function (next) {  // pre save hook -> before saving the user to db , we will hash the password
-  if (!this.isModified("password")) return next(); // only hash if password is new or changed
+// Hash password before saving if modified
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-// Instance method to compare a plain password with the stored hash
-// Basically hashed password ko compare krna hai user ke input se
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };

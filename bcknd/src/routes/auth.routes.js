@@ -1,18 +1,16 @@
-
 const express = require("express");
 const router = express.Router();
-// importing the controllers by destructuring the exports from auth.controller.js
+const passport = require("passport");
+
 const {
-  registerInit,      // send OTP for signup
-  registerVerifyOTP,  // verify OTP for signup
-  registerSetPassword, // save password after OTP verification
-  loginWithPassword,  // login using email + password
-  loginOTPInit,   // send OTP for login
-  loginOTPVerify,  // verify otp for login 
+  registerInit,
+  registerVerifyOTP,
+  registerSetPassword,
+  loginWithPassword,
+  loginOTPInit,
+  loginOTPVerify,
 } = require("../controllers/auth.controller");
 
-
-// importing the validators for each route i.e user ka input sahi hai ya nhi
 const {
   validateRegisterInit,
   validateVerifyOTP,
@@ -22,33 +20,27 @@ const {
   validateLoginOTPVerify,
 } = require("../validators/auth.validators");
 
-// handle errors from validators eg if email is invalid -> send errror response
-
 const handleValidationErrors = require("../middlewares/validate");
-
-// otplimiter -> stopping otp spam , authLimiter -> stopping brute force attack on login and otp verification routes
 const { otpLimiter, authLimiter } = require("../middlewares/rateLimiter");
+const { signToken } = require("../services/token.service");
 
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
 
-// ── Registration flow ──
-// Step 1 — submit email, receive OTP
+// ── Registration ───────────────────────────────────────────────────────────
 router.post(
   "/register/init",
-  otpLimiter,  // middleware 
-  validateRegisterInit, // validator
-  handleValidationErrors, // middleware 
-  registerInit, // controller
+  otpLimiter,
+  validateRegisterInit,
+  handleValidationErrors,
+  registerInit,
 );
-// Step 2 — verify OTP
 router.post(
   "/register/verify-otp",
-  authLimiter,  // middleware
-  validateVerifyOTP, // validator
-  handleValidationErrors, // middleware
-  registerVerifyOTP, // controller
+  authLimiter,
+  validateVerifyOTP,
+  handleValidationErrors,
+  registerVerifyOTP,
 );
-
-// Step 3 — set password (email must already be verified)
 router.post(
   "/register/set-password",
   authLimiter,
@@ -57,8 +49,7 @@ router.post(
   registerSetPassword,
 );
 
-// ── Login flow ─────────────────────────────────────────────────────────────
-// Option A — email + password
+// ── Login ──────────────────────────────────────────────────────────────────
 router.post(
   "/login/password",
   authLimiter,
@@ -66,8 +57,6 @@ router.post(
   handleValidationErrors,
   loginWithPassword,
 );
-
-// Option B — OTP login: step 1 send OTP
 router.post(
   "/login/otp/init",
   otpLimiter,
@@ -75,8 +64,6 @@ router.post(
   handleValidationErrors,
   loginOTPInit,
 );
-
-// Option B — OTP login: step 2 verify OTP
 router.post(
   "/login/otp/verify",
   authLimiter,
@@ -84,5 +71,48 @@ router.post(
   handleValidationErrors,
   loginOTPVerify,
 );
+
+// ── Google OAuth ───────────────────────────────────────────────────────────
+// Step 1 — redirect to Google consent screen
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "select_account",
+  }),
+);
+
+// Step 2 — Google redirects back here with an authorization code
+// We use a CUSTOM CALLBACK so we can handle both success and failure ourselves.
+// This avoids the invalid_grant issue caused by passport middleware mis-handling.
+router.get("/google/callback", (req, res, next) => {
+  passport.authenticate("google", { session: true }, (err, user, info) => {
+    // ── Hard error (network issue, bad credentials, etc.) ──────────────────
+    if (err) {
+      console.error("Google OAuth error:", err.message);
+      return res.redirect(
+        `${CLIENT_URL}/auth/callback?error=GOOGLE_AUTH_FAILED`,
+      );
+    }
+
+    // ── Soft failure — user denied or EMAIL_EXISTS_LOCAL ───────────────────
+    if (!user) {
+      const message = info?.message || "GOOGLE_AUTH_FAILED";
+      return res.redirect(`${CLIENT_URL}/auth/callback?error=${message}`);
+    }
+
+    // ── Success — issue JWT and redirect to frontend ───────────────────────
+    const token = signToken(user._id);
+    const params = new URLSearchParams({
+      token,
+      name: user.name || "",
+      email: user.email || "",
+      organization: user.organization || "",
+      registrationStep: user.registrationStep || "onboarded",
+    });
+
+    res.redirect(`${CLIENT_URL}/auth/callback?${params.toString()}`);
+  })(req, res, next);
+});
 
 module.exports = router;

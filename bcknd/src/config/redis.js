@@ -28,7 +28,7 @@ try {
   redis.on("close", () => {
     isRedisReady = false;
   });
-p
+
   redis.connect().catch(() => {
     console.warn("Redis not available — rate limiting will be skipped");
   });

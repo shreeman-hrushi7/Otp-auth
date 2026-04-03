@@ -3,6 +3,8 @@ const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
 const morgan = require("morgan");
+const session = require("express-session");
+const passport = require("./config/passport");
 
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth.routes");
@@ -22,6 +24,26 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// ── Session — needed by Passport for the OAuth redirect round-trip ─────────
+// Sessions are ONLY used during the Google OAuth handshake (2 requests).
+// All ongoing auth uses JWT — sessions are not kept after that.
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "change_this_secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // true in production (requires HTTPS)
+      httpOnly: true,
+      maxAge: 5 * 60 * 1000, // 5 minutes — only needed for OAuth handshake
+    },
+  }),
+);
+
+// ── Passport ───────────────────────────────────────────────────────────────
+app.use(passport.initialize());
+app.use(passport.session());
 
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));

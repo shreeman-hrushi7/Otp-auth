@@ -5,20 +5,24 @@ const asyncWrapper = require("../utils/asyncWrapper");
 const registerInit = asyncWrapper(async (req, res) => {
   const { email } = req.body;
   await authService.initiateRegistration(email);
-  res.status(200).json({
-    status: "success",
-    message: "OTP sent to your email. It expires in 15 minutes.",
-  });
+  res
+    .status(200)
+    .json({
+      status: "success",
+      message: "OTP sent to your email. It expires in 15 minutes.",
+    });
 });
 
 // POST /api/auth/register/verify-otp
 const registerVerifyOTP = asyncWrapper(async (req, res) => {
   const { email, otp } = req.body;
   await authService.verifyRegistrationOTP(email, otp);
-  res.status(200).json({
-    status: "success",
-    message: "Email verified. Please set your password.",
-  });
+  res
+    .status(200)
+    .json({
+      status: "success",
+      message: "Email verified. Please set your password.",
+    });
 });
 
 // POST /api/auth/register/set-password
@@ -54,11 +58,12 @@ const loginWithPassword = asyncWrapper(async (req, res) => {
 const loginOTPInit = asyncWrapper(async (req, res) => {
   const { email } = req.body;
   await authService.initiateOTPLogin(email);
-  // Generic message to avoid email enumeration
-  res.status(200).json({
-    status: "success",
-    message: "If this email is registered, an OTP has been sent.",
-  });
+  res
+    .status(200)
+    .json({
+      status: "success",
+      message: "If this email is registered, an OTP has been sent.",
+    });
 });
 
 // POST /api/auth/login/otp/verify
@@ -86,3 +91,4 @@ module.exports = {
   loginOTPInit,
   loginOTPVerify,
 };
+  
