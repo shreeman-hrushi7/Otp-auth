@@ -1,4 +1,76 @@
-import { useEffect } from "react";
+// src/pages/AuthCallbackPage.jsx
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { saveToken, saveUser } from "@/lib/api";
+
+export default function AuthCallbackPage() {
+  const navigate = useNavigate();
+  const hasRun = useRef(false);
+
+  useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    const token = params.get("token");
+
+    window.history.replaceState({}, document.title, "/auth/callback");
+
+    if (error) {
+      if (error === "EMAIL_EXISTS_LOCAL") {
+        toast.error("Email already registered", {
+          description:
+            "This email is registered with password or OTP. Please sign in using that method.",
+        });
+      } else {
+        toast.error("Google sign-in failed", {
+          description: "Something went wrong. Please try again.",
+        });
+      }
+
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    if (token) {
+      saveToken(token);
+      saveUser({
+        name: params.get("name") || "",
+        email: params.get("email") || "",
+        organization: params.get("organization") || "",
+        registrationStep: params.get("registrationStep") || "onboarded",
+      });
+
+      toast.success("Signed in with Google!", {
+        description: params.get("name")
+          ? `Welcome, ${params.get("name")}`
+          : "You are signed in.",
+      });
+
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+
+    toast.error("Sign-in failed", {
+      description: "Please try again.",
+    });
+    navigate("/login", { replace: true });
+  }, [navigate]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-3 text-zinc-500">
+        <Loader2 className="w-6 h-6 animate-spin" />
+        <p className="text-sm">Completing sign-in…</p>
+      </div>
+    </div>
+  );
+}
+
+/*import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -9,7 +81,7 @@ import { saveToken, saveUser } from "@/lib/api";
  * Google → backend → redirects here with ?token=... or ?error=...
  * We read the URL params, store the token, and send the user to the dashboard.
  */
-export default function AuthCallbackPage() {
+/*export default function AuthCallbackPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,3 +136,5 @@ export default function AuthCallbackPage() {
     </div>
   );
 }
+
+*/
