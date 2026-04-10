@@ -89,6 +89,7 @@ export default function DashboardPage() {
             <p className="text-sm text-zinc-500 pt-1">
               Authentication is fully working. Registration, OTP verification,
               password login and OTP login all connected to your Express backend.
+              You can update the desciption 
             </p>
           </CardContent>
         </Card>

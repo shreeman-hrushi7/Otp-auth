@@ -26,7 +26,6 @@ const { signToken } = require("../services/token.service");
 
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
 
-// ── Registration ───────────────────────────────────────────────────────────
 router.post(
   "/register/init",
   otpLimiter,
@@ -34,6 +33,7 @@ router.post(
   handleValidationErrors,
   registerInit,
 );
+
 router.post(
   "/register/verify-otp",
   authLimiter,
@@ -41,6 +41,7 @@ router.post(
   handleValidationErrors,
   registerVerifyOTP,
 );
+
 router.post(
   "/register/set-password",
   authLimiter,
@@ -49,7 +50,6 @@ router.post(
   registerSetPassword,
 );
 
-// ── Login ──────────────────────────────────────────────────────────────────
 router.post(
   "/login/password",
   authLimiter,
@@ -57,6 +57,7 @@ router.post(
   handleValidationErrors,
   loginWithPassword,
 );
+
 router.post(
   "/login/otp/init",
   otpLimiter,
@@ -64,6 +65,7 @@ router.post(
   handleValidationErrors,
   loginOTPInit,
 );
+
 router.post(
   "/login/otp/verify",
   authLimiter,
@@ -72,8 +74,6 @@ router.post(
   loginOTPVerify,
 );
 
-// ── Google OAuth ───────────────────────────────────────────────────────────
-// Step 1 — redirect to Google consent screen
 router.get(
   "/google",
   passport.authenticate("google", {
@@ -82,12 +82,8 @@ router.get(
   }),
 );
 
-// Step 2 — Google redirects back here with an authorization code
-// We use a CUSTOM CALLBACK so we can handle both success and failure ourselves.
-// This avoids the invalid_grant issue caused by passport middleware mis-handling.
 router.get("/google/callback", (req, res, next) => {
   passport.authenticate("google", { session: true }, (err, user, info) => {
-    // ── Hard error (network issue, bad credentials, etc.) ──────────────────
     if (err) {
       console.error("Google OAuth error:", err.message);
       return res.redirect(
@@ -95,13 +91,11 @@ router.get("/google/callback", (req, res, next) => {
       );
     }
 
-    // ── Soft failure — user denied or EMAIL_EXISTS_LOCAL ───────────────────
     if (!user) {
       const message = info?.message || "GOOGLE_AUTH_FAILED";
       return res.redirect(`${CLIENT_URL}/auth/callback?error=${message}`);
     }
 
-    // ── Success — issue JWT and redirect to frontend ───────────────────────
     const token = signToken(user._id);
     const params = new URLSearchParams({
       token,
