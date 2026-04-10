@@ -33,19 +33,14 @@ const userSchema = new mongoose.Schema(
       enum: ["pending", "credentials_set", "onboarded"],
       default: "pending",
     },
-
-    // ── Google OAuth fields ──────────────────────────────────────────────
     googleId: {
       type: String,
-      sparse: true, // allows multiple null values (only email/OTP users have null)
+      sparse: true,
       unique: true,
     },
     avatar: {
-      type: String, // Google profile picture URL
+      type: String,
     },
-    // Tracks how this account was originally created
-    // 'local'  — registered via email OTP flow
-    // 'google' — registered via Google OAuth
     authMethod: {
       type: String,
       enum: ["local", "google"],
@@ -55,7 +50,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// Hash password before saving if modified
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(12);

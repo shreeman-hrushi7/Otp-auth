@@ -97,10 +97,12 @@ router.get("/google/callback", (req, res, next) => {
     }
 
     const token = signToken(user._id);
+
     const params = new URLSearchParams({
       token,
       name: user.name || "",
       email: user.email || "",
+      avatar: user.avatar || "",
       organization: user.organization || "",
       registrationStep: user.registrationStep || "onboarded",
     });

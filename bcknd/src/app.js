@@ -9,6 +9,7 @@ const passport = require("./config/passport");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth.routes");
 const onboardingRoutes = require("./routes/onboarding.routes");
+const userRoutes = require("./routes/user.routes");
 const errorHandler = require("./middlewares/errorHandler");
 const AppError = require("./utils/AppError");
 
@@ -51,6 +52,7 @@ if (process.env.NODE_ENV === "development") {
 
 // ── Routes ─────────────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
 app.use("/api/onboarding", onboardingRoutes);
 
 // ── 404 ────────────────────────────────────────────────────────────────────
